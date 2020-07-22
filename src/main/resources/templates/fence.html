@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+    <script src="/js/jquery-3.5.1.min.js"></script>
+    <script src="/js/bootstrap.min.js" type="application/javascript"></script>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <title>fence</title>
+    <style>
+        html, body, #container {
+            height: 100%;
+            width: 100%;
+        }
+
+        .input-card .btn{
+            margin-right: 1.2rem;
+            width: 9rem;
+        }
+
+        .input-card .btn:last-child{
+            margin-right: 0;
+        }
+    </style>
+</head>
+<body>
+<div th:insert="~{navigation :: nav}"></div>
+
+<div id="container"></div>
+<div class="input-card">
+    <h4>轨迹回放控制</h4>
+    <div class="input-item">
+        <input type="button" class="btn" value="开始绘制" id="start" onclick="createEditor()"/>
+        <input type="button" class="btn" value="定制绘制" id="pause" onclick="pauseAnimation()"/>
+    </div>
+    <div class="input-item">
+        <input type="button" class="btn" value="继续动画" id="resume" onclick="resumeAnimation()"/>
+        <input type="button" class="btn" value="停止动画" id="stop" onclick="stopAnimation()"/>
+    </div>
+</div>
+<div class="info" id="tip" style="margin-top: 60px">
+    <span id="tips">总共添加了0个Marker.</span>
+</div>
+
+<script th:inline="javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=ef4eb172a670541d93a3ab9fd6cfc7f8"></script>
+<script>
+    var editorTool, map = new AMap.Map("container", {
+        resizeEnable: true,
+        center: [116.403322, 39.900255],//地图中心点
+        zoom: 13 //地图显示的缩放级别
+    });
+    var beginNum = 0;
+    var clickListener ;
+    var beginPoints;
+    var beginMarks ;
+    var polygonEditor;
+    var resPolygon = [];
+    var resNum = 0;
+    init();
+    function init(){
+        beginPoints = [];
+        beginMarks = [];
+        beginNum = 0;
+        polygonEditor = '';
+        // clickListener = AMap.event.addListener(map, "click", mapOnClick);
+        //显示已有的围栏
+        var str = '[{"lng":116.367445,"lat":39.917899},{"lng":116.406584,"lat":39.911843},{"lng":116.379633,"lat":39.886162}]';
+        var arr = json2arr(str);
+        createPolygon(arr);
+    }
+
+
+    function createPolygon(arr){
+        var polygon = new AMap.Polygon({
+            map: map,
+            path: arr,
+            strokeColor: "#0000ff",
+            strokeOpacity: 1,
+            strokeWeight: 3,
+            fillColor: "#f5deb3",
+            fillOpacity: 0.35
+        });
+        return polygon;
+    }
+
+
+    function mapOnClick(e) {
+        // document.getElementById("lnglat").value = e.lnglat.getLng() + ',' + e.lnglat.getLat()
+        beginMarks.push(addMarker(e.lnglat));
+        beginPoints.push(e.lnglat);
+        beginNum++;
+        if(beginNum == 3){
+            AMap.event.removeListener(clickListener);
+            var polygon = createPolygon(beginPoints);
+            polygonEditor = createEditor(polygon);
+            clearMarks();
+        }
+    };
+
+    var tipsDiv = document.getElementById('tips');
+
+    var clickHandler
+    function createEditor(){
+        //选择一个点
+        tipsDiv.innerHTML = "选择圆心.";
+        clickHandler = function(e) {
+            alert('您选择[ '+e.lnglat.getLng()+','+e.lnglat.getLat()+' ]的位置为围栏中心！');
+        };
+        // 绑定事件
+        map.on('click', clickHandler);
+
+
+    }
+    function stopAnimation () {
+        map.off('click', clickHandler);
+    }
+
+
+    function closeEditPolygon(){
+        polygonEditor.close();
+
+    }
+
+    function polygonEnd(res){
+        resPolygon.push(res.target);
+        alert(resPolygon[resNum].contains([116.386328, 39.913818]));
+        appendHideHtml(resNum,res.target.getPath());
+
+        resNum++;
+        init();
+    }
+
+    function appendHideHtml(index,arr){
+        var strify = JSON.stringify(arr);
+        var html = '<input type="hidden" id="index'+index+'" name="paths[]" value="'+strify+'">';
+        $('body').append(html);
+        console.log(html);
+    }
+
+
+
+
+    function clearMarks(){
+        map.remove(beginMarks);
+    }
+
+    function json2arr(json){
+        var arr = JSON.parse(json);
+        var res = [];
+        for (var i = 0; i < arr.length; i++) {
+            var line = [];
+            line.push(arr[i].lng);
+            line.push(arr[i].lat);
+            res.push(line);
+        };
+        return res;
+    }
+
+
+    // 实例化点标记
+    function addMarker(lnglat) {
+
+        var marker = new AMap.Marker({
+            icon: "http://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+            position: lnglat
+        });
+        marker.setMap(map);
+        return marker;
+    }
+
+</script>
+</body>
+</html>
+

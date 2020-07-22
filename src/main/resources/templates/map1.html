@@ -1,0 +1,179 @@
+
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+    <script src="/js/jquery-3.5.1.min.js"></script>
+    <script src="/js/bootstrap.min.js" type="application/javascript"></script>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <title>地图显示</title>
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div th:insert="~{navigation :: nav}"></div>
+
+
+<div id="container"></div>
+<div class="input-card">
+    <h4>添加新围栏</h4>
+    <div class="input-item">
+        <input type="button" class="btn" value="开始" id="start" onclick="startDrawPolygon()"/>
+        <input type="button" class="btn" value="完成" id="pause" onclick="endDrawPolygon()"/>
+        <input type="button" class="btn" value="删除围栏" id="del" onclick="deleteFence()"/>
+    </div>
+</div>
+<!-- 加载地图JSAPI脚本 -->
+<script th:inline="javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=ef4eb172a670541d93a3ab9fd6cfc7f8plugin=AMap.PolyEditor"></script>
+<script>
+    var map = new AMap.Map('container', {
+        resizeEnable: true, //是否监控地图容器尺寸变化
+        zoom:18, //初始化地图层级
+        center: [122.123456,31.123456],//初始化地图中心点
+        viewMode:'3D'//使用3D视图
+    });
+
+    marker = new AMap.Marker({
+        icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+        position: [[${location}]],
+        offset: new AMap.Pixel(-13, -30)
+    });
+    marker.setMap(map);
+    map.setZoomAndCenter(18, [[${location}]]);
+
+    var beginNum = 0;
+    var clickListener ;
+    var beginPoints;
+    var beginMarks ;
+    var polygonEditor;
+    var resPolygon = [];
+    var resNum = 0;
+    var Polygon;
+
+    //绘制已有围栏
+    var fenceJson = [[${fenceJson}]];
+    // var str = '[{"J":39.91789947393269,"G":116.36744477221691,"lng":116.367445,"lat":39.917899},{"J":39.91184292800211,"G":116.40658356616223,"lng":116.406584,"lat":39.911843},{"J":39.88616249265181,"G":116.37963272998047,"lng":116.379633,"lat":39.886162}]';
+    // var arr = json2arr(fenceJson);
+    Polygon = createPolygon(fenceJson);
+    //绘制围栏前的初始化操作
+    function init(){
+        beginPoints = [];
+        beginMarks = [];
+        beginNum = 0;
+        polygonEditor = '';
+        clickListener = AMap.event.addListener(map, "click", mapOnClick);
+    }
+
+    function mapOnClick(e) {
+        // document.getElementById("lnglat").value = e.lnglat.getLng() + ',' + e.lnglat.getLat()
+        beginMarks.push(addMarker(e.lnglat));
+        beginPoints.push(e.lnglat);
+        beginNum++;
+        // alert(beginNum);
+        if(beginNum >= 3)
+        {
+            if(beginNum > 3)
+            {
+                //清除前一次的多边形
+                map.remove(Polygon);
+
+            }
+            Polygon = createPolygon(beginPoints);
+            clearMarks();
+        }
+
+    };
+
+    function startDrawPolygon()
+    {
+        init();
+    }
+
+    function endDrawPolygon()
+    {
+        var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open('GET', '/saveFence?polygon='+Polygon, true);//第二步：打开连接
+        httpRequest.send();//第三步：发送请求  将请求参数写在URL中
+        AMap.event.removeListener(clickListener);
+
+    }
+
+    function createPolygon(arr){
+        var polygon = new AMap.Polygon({
+            map: map,
+            path: arr,
+            strokeColor: "#0000ff",
+            strokeOpacity: 1,
+            strokeWeight: 3,
+            fillColor: "#f5deb3",
+            fillOpacity: 0.35
+        });
+        return polygon;
+    }
+
+    function deleteFence(){
+        var httpRequest = new XMLHttpRequest();//第一步：建立所需的对象
+        httpRequest.open('GET', '/deleteFence', true);//第二步：打开连接
+        httpRequest.send();//第三步：发送请求  将请求参数写在URL中
+        map.remove(Polygon);
+    }
+
+
+    function clearMarks(){
+        map.remove(beginMarks);
+    }
+
+
+    // 实例化点标记
+    function addMarker(lnglat) {
+
+        var marker = new AMap.Marker({
+            icon: "http://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+            position: lnglat
+        });
+        marker.setMap(map);
+        return marker;
+    }
+
+
+    setInterval(function() {
+        $.ajax({
+            type: "get",
+            url: "/heart",
+            data: {},
+            dataType: "json",
+            async: false,
+            success: function (res) {
+                console.log(res);
+                $("#heart").html("心率："+res.rate+"次/分  血氧："+res.oxy);
+            }
+        })
+    }, 60000)
+    setInterval(function() {
+        $.ajax({
+            type: "get",
+            url: "/steps",
+            data: {},
+            dataType: "json",
+            async: false,
+            success: function (res) {
+                console.log(res);
+                $("#steps").html("步频："+res+"步/分");
+            }
+        })
+    }, 60000)
+</script>
+</body>
+</html>

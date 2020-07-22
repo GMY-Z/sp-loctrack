@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.gmy.sp.loctrack.mapper.HeartMapper">
+    <select id="queryLastHeartByPhone" parameterType="String" resultType="io.github.gmy.sp.loctrack.DO.HeartDO">
+        select * from hearts
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone}))
+        order by timestamp desc
+        limit 1
+    </select>
+    <insert id="addHeart" parameterType="io.github.gmy.sp.loctrack.DO.HeartDO">
+        insert into hearts
+        values (
+               #{deviceId},
+               #{rate},
+               #{oxy},
+               FROM_UNIXTIME(#{timestamp})
+        )
+    </insert>
+</mapper>

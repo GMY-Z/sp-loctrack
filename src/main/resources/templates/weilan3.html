@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>点是否在多边形内</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" type="text/css">
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.13&key=你的高德ak"></script>
+    <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
+    <style>
+        html,body,#container{
+            height: 100%
+        }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div class='info'>拖动Marker可调整位置</div>
+<script type="text/javascript">
+    //初始化地图对象，加载地图
+    var map = new AMap.Map("container", {
+        resizeEnable: true,
+        zoom: 13
+    });
+    // 创建多边形
+    var path = [
+        [116.169465,39.932670],
+        [116.160260,39.924492],
+        [116.186138,39.879817],
+        [116.150625,39.710019],
+        [116.183198,39.709920],
+        [116.226950,39.777616],
+        [116.421078,39.810771],
+        [116.442621,39.799892],
+        [116.463478,39.790066],
+        [116.588276,39.809551],
+        [116.536091,39.808859],
+        [116.573856,39.839643],
+        [116.706380,39.916740],
+        [116.657285,39.934545],
+        [116.600293,39.937770],
+        [116.540039,39.937968],
+        [116.514805,39.982375],
+        [116.499935,40.013710],
+        [116.546520,40.030443],
+        [116.687668,40.129961],
+        [116.539697,40.080659],
+        [116.503390,40.058474],
+        [116.468800,40.052578]
+    ];
+    var polygon = new AMap.Polygon({
+        map: map,
+        fillOpacity:0.4,
+        path: path
+    });
+
+    // 创建点
+    var marker = new AMap.Marker({
+        map: map,
+        draggable:true,
+        position: [116.566298, 40.014179]
+    });
+
+    function compute(){
+        var point = marker.getPosition();
+        var isPointInRing = AMap.GeometryUtil.isPointInRing(point,path);
+        marker.setLabel({
+            content:isPointInRing?'内部':'外部',
+            offset:new AMap.Pixel(20,0)
+        });
+    }
+
+    compute();
+    // 为marker绑定拖拽事件
+    marker.on('dragging',compute)
+    map.setFitView();
+
+    var checkPoint=localStorage.getItem("c");//这是我利用localStorage存的坐标点的
+    var polygonPoints=localStorage.getItem("p");//这是我利用localStorage存的坐标多边形的
+    var ace = new Array(); //定义一数组
+    var strs= new Array(); //定义一数组
+    strs=checkPoint.split(","); //字符分割 这里把坐标转化为数组，类似于 [116.468800,40.052578]
+    ace=group(polygonPoints.split(","), 2)//这里先将他转化为大数组在转化为类似于两个一对的小数组 类似于 [
+    // [116.169465,39.932670],
+    // [116.160260,39.924492],
+    // [116.186138,39.879817],
+    // ]
+    console.log(strs);
+    console.log(ace);
+
+    // 创建点
+    var marker = new AMap.Marker({
+        map: map,
+        draggable:true,
+        position: strs
+    });
+
+    function compute(){
+        var point = marker.getPosition();
+        var isPointInRing = AMap.GeometryUtil.isPointInRing(point,ace);
+        // marker.setLabel({
+        //     content:isPointInRing?'内部':'外部',
+        //     offset:new AMap.Pixel(20,0)
+        // });
+        alert(isPointInRing?'内部':'外部',)
+    }
+
+    compute();
+
+    function group(array, subGroupLength) {
+        var index = 0;
+        var newArray = [];
+
+        while(index < array.length) {
+            newArray.push(array.slice(index, index += subGroupLength));
+        }
+
+        return newArray;
+    }
+
+
+</script>
+</body>
+</html>

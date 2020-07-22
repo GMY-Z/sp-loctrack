@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.gmy.sp.loctrack.mapper.AccountMapper">
+    <select id="authenticate" parameterType="String" resultType="Integer">
+        select 1 from accounts where phone = #{phone} and pwd = #{pwd} limit 1;
+    </select>
+    <select id="queryDeviceIdByPhone" parameterType="String" resultType="Integer">
+        select device_id from dev_ownerships
+        where account_id = (
+            select account_id from accounts where phone = #{phone})
+        limit 1
+    </select>
+    <select id="queryDeviceDescriptionByPhone" parameterType="String" resultType="String">
+        select description from devices
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone})
+            limit 1)
+    </select>
+</mapper>

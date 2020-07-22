@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.gmy.sp.loctrack.mapper.LocationMapper">
+    <select id="queryLocationsByPhone" parameterType="String" resultType="io.github.gmy.sp.loctrack.DO.LocationDO">
+        select * from locations
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone}));
+    </select>
+    <select id="queryLastLocationByPhone" parameterType="String" resultType="io.github.gmy.sp.loctrack.DO.LocationDO">
+        select * from locations
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone}))
+        order by timestamp desc
+        limit 1
+    </select>
+    <insert id="addLocation" parameterType="io.github.gmy.sp.loctrack.DO.LocationDO">
+        insert into locations
+        values (
+               #{deviceId},
+               #{longitude},
+               #{latitude},
+               FROM_UNIXTIME(#{timestamp})
+        )
+    </insert>
+</mapper>

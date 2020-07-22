@@ -1,0 +1,151 @@
+
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <link rel="stylesheet" href="/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="/css/bootstrap-theme.min.css">
+    <script src="/js/jquery-3.5.1.min.js"></script>
+    <script src="/js/bootstrap.min.js" type="application/javascript"></script>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
+    <title>地图显示</title>
+    <style>
+        html,
+        body,
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div th:insert="~{navigation :: nav}"></div>
+<div class="alert alert-danger alert-dismissible" role="alert" th:if="${danger}">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <strong>警告!</strong> 老人摔倒了.
+</div>
+<div id="oxy">
+
+</div>
+<div id="container"></div>
+<!-- 加载地图JSAPI脚本 -->
+<script th:inline="javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=ef4eb172a670541d93a3ab9fd6cfc7f8"></script>
+<script>
+
+
+    var map = new AMap.Map('container', {
+        resizeEnable: true, //是否监控地图容器尺寸变化
+        zoom:18, //初始化地图层级
+        center: [116.480151,39.998453],//初始化地图中心点
+        viewMode:'3D'//使用3D视图
+    });
+
+    marker = new AMap.Marker({
+        icon: "//a.amap.com/jsapi_demos/static/demo-center/icons/poi-marker-default.png",
+        position: [116.480151,39.998453],
+        offset: new AMap.Pixel(-13, -30)
+    });
+    marker.setMap(map);
+    // map.setZoomAndCenter(11, [[${location}]]);
+    // marker.setPosition([[${location}]]);
+    var fenceJson = [[${fenceJson}]];
+    createPolygon(fenceJson);
+    setInterval(function() {
+        $.ajax({
+            type: "get",
+            url: "/track",
+            data: {},
+            dataType: "json",
+            async: false,
+            success: function (result) {
+                console.log(result.latitude);
+                console.log(result);
+                var loc = JSON.stringify(result);
+                console.log(loc);
+                map.setZoomAndCenter(18, [result.longitude, result.latitude]);
+                marker.setPosition([result.longitude, result.latitude]);
+                var hh = IsPtInPoly(result.longitude, result.latitude, fenceJson);
+                if(!hh){
+                    alert("老人走出围栏");
+                }
+            }
+        })
+    }, 3000)
+    function createPolygon(arr){
+        var polygon = new AMap.Polygon({
+            map: map,
+            path: arr,
+            strokeColor: "#0000ff",
+            strokeOpacity: 1,
+            strokeWeight: 3,
+            fillColor: "#f5deb3",
+            fillOpacity: 0.35
+        });
+        return polygon;
+    }
+
+    function IsPtInPoly(ALon, ALat, APoints) {
+        var iSum = 0,
+            iCount;
+        var dLon1, dLon2, dLat1, dLat2, dLon;
+        if (APoints.length < 3) return false;
+        iCount = APoints.length;
+        for (var i = 0; i < iCount; i++) {
+            if (i == iCount - 1) {
+                dLon1 = APoints[i].longitude;
+                dLat1 = APoints[i].latitude;
+                dLon2 = APoints[0].longitude;
+                dLat2 = APoints[0].latitude;
+            } else {
+                dLon1 = APoints[i].longitude;
+                dLat1 = APoints[i].latitude;
+                dLon2 = APoints[i + 1].longitude;
+                dLat2 = APoints[i + 1].latitude;
+            }
+            //以下语句判断A点是否在边的两端点的水平平行线之间，在则可能有交点，开始判断交点是否在左射线上
+            if (((ALat >= dLat1) && (ALat < dLat2)) || ((ALat >= dLat2) && (ALat < dLat1))) {
+                if (Math.abs(dLat1 - dLat2) > 0) {
+                    //得到 A点向左射线与边的交点的x坐标：
+                    dLon = dLon1 - ((dLon1 - dLon2) * (dLat1 - ALat)) / (dLat1 - dLat2);
+                    if (dLon < ALon)
+                        iSum++;
+                }
+            }
+        }
+        if (iSum % 2 != 0)
+            return true;
+        return false;
+    }
+    setInterval(function() {
+        $.ajax({
+            type: "get",
+            url: "/heart",
+            data: {},
+            dataType: "json",
+            async: false,
+            success: function (res) {
+                console.log(res);
+                $("#heart").html("心率："+res.rate+"次/分  血氧："+res.oxy);
+            }
+        })
+    }, 60000)
+    setInterval(function() {
+        $.ajax({
+            type: "get",
+            url: "/steps",
+            data: {},
+            dataType: "json",
+            async: false,
+            success: function (res) {
+                console.log(res);
+                $("#steps").html("步频："+res+"步/分");
+            }
+        })
+    }, 60000)
+</script>
+</body>
+</html>

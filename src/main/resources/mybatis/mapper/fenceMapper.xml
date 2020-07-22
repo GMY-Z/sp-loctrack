@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.github.gmy.sp.loctrack.mapper.FenceMapper">
+    <select id="queryFenceByPhone" parameterType="String" resultType="io.github.gmy.sp.loctrack.DO.FenceDO">
+        select * from fences
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone}))
+        order by num;
+    </select>
+
+    <insert id="addFence">
+        insert into fences
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.deviceId},
+                #{item.longitude},
+                #{item.latitude},
+                #{item.num}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteFenceByPhone" parameterType="String">
+        delete from fences
+        where device_id = (
+            select device_id from dev_ownerships
+            where account_id = (
+                select account_id from accounts where phone = #{phone}))
+    </delete>
+</mapper>
